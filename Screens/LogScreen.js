@@ -85,13 +85,44 @@ export default function LogScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20
-  },
-  title: {
-    fontSize: 22, marginBottom: 15
-  },
-  input: {
-    width: '80%', borderWidth: 1, borderColor: '#ccc', padding: 10, marginBottom: 20, borderRadius: 8
-  }
-});
+    container: {
+      flex: 1,
+      backgroundColor: '#f4faff',
+      padding: 20,
+      alignItems: 'center',
+      justifyContent: 'center'
+    },
+    title: {
+      fontSize: 26,
+      fontWeight: 'bold',
+      marginBottom: 20,
+      color: '#333'
+    },
+    input: {
+      width: '80%',
+      borderWidth: 1,
+      borderColor: '#aad8d3',
+      padding: 12,
+      borderRadius: 10,
+      marginBottom: 20,
+      backgroundColor: '#fff'
+    },
+    historySection: {
+      marginTop: 30,
+      width: '100%',
+      paddingHorizontal: 20
+    },
+    logItem: {
+      backgroundColor: '#e1f5f2',
+      padding: 10,
+      borderRadius: 8,
+      marginBottom: 8
+    },
+    logText: {
+      color: '#333'
+    },
+    clearButton: {
+      marginTop: 10
+    }
+  });
+  
