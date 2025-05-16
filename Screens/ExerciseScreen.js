@@ -27,7 +27,7 @@ export default function ExerciseScreen() {
 
     const newEntry = {
       minutes,
-      date: new Date().toISOString(),
+      date: new Date().toLocaleString(),
     };
 
     try {
@@ -38,7 +38,8 @@ export default function ExerciseScreen() {
 
       Alert.alert('Logged', `You recorded ${minutes} minutes of exercise.`);
       setMinutes('');
-      setLogHistory(logs);
+      Keyboard.dismiss(); // Close keyboard on submit
+      setLogHistory(logs.sort((a, b) => new Date(b.date) - new Date(a.date))); // Sort newest first
     } catch (error) {
       Alert.alert('Error', 'Failed to save data.');
     }
@@ -59,7 +60,7 @@ export default function ExerciseScreen() {
     try {
       const saved = await AsyncStorage.getItem('@exerciseLogs');
       const logs = saved ? JSON.parse(saved) : [];
-      setLogHistory(logs);
+      setLogHistory(logs.sort((a, b) => new Date(b.date) - new Date(a.date))); // Sort on load
 
       const marks = {};
       logs.forEach((entry) => {
@@ -114,7 +115,7 @@ export default function ExerciseScreen() {
             markedDates={markedDates}
             onDayPress={(day) => {
               const selectedDate = day.dateString;
-              const entry = logHistory.find(e =>
+              const entry = logHistory.find((e) =>
                 new Date(e.date).toISOString().startsWith(selectedDate)
               );
               if (entry) {
@@ -123,18 +124,22 @@ export default function ExerciseScreen() {
                 Alert.alert('No Data', 'No exercise data for this day.');
               }
             }}
-            style={{ marginVertical: 20 }}
+            style={{ marginVertical: 20, borderRadius: 12, overflow: 'hidden' }}
           />
 
           <View style={styles.historySection}>
             <Text style={{ fontWeight: 'bold', marginBottom: 10 }}>Exercise History:</Text>
-            {logHistory.map((entry, index) => (
-              <View key={index} style={styles.logItem}>
-                <Text style={styles.logText}>
-                  {entry.minutes} minutes on {entry.date}
-                </Text>
-              </View>
-            ))}
+            {logHistory.length === 0 ? (
+              <Text style={{ color: '#999' }}>No exercise data logged yet.</Text>
+            ) : (
+              logHistory.map((entry, index) => (
+                <View key={index} style={styles.logItem}>
+                  <Text style={styles.logText}>
+                    {entry.minutes} minutes on {entry.date}
+                  </Text>
+                </View>
+              ))
+            )}
 
             <View style={styles.clearButton}>
               <Button title="Clear History" onPress={handleClearLogs} color="#ff5252" />
@@ -179,6 +184,11 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 8,
     marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   logText: {
     color: '#333',
