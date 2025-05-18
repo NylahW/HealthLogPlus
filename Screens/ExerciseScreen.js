@@ -27,7 +27,7 @@ export default function ExerciseScreen() {
 
     const newEntry = {
       minutes,
-      date: new Date().toLocaleString(),
+      date: new Date().toISOString(),
     };
 
     try {
