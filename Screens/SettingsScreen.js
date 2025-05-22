@@ -1,87 +1,104 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, Switch, Alert, StyleSheet } from 'react-native';
-import * as Notifications from 'expo-notifications';
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  Switch,
+  StyleSheet,
+  Alert,
+  Pressable,
+  Platform,
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Notifications from 'expo-notifications';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 export default function SettingsScreen() {
   const [remindersEnabled, setRemindersEnabled] = useState(false);
+  const [reminderTime, setReminderTime] = useState(new Date());
+  const [showPicker, setShowPicker] = useState(false);
 
   useEffect(() => {
-    registerForPushNotificationsAsync();
-    loadReminderSetting();
+    const loadSettings = async () => {
+      try {
+        const storedEnabled = await AsyncStorage.getItem('@dailyReminders');
+        const storedTime = await AsyncStorage.getItem('@reminderTime');
+        if (storedEnabled !== null) setRemindersEnabled(JSON.parse(storedEnabled));
+        if (storedTime !== null) setReminderTime(new Date(storedTime));
+      } catch (e) {
+        Alert.alert('Error', 'Failed to load settings.');
+      }
+    };
+    loadSettings();
   }, []);
 
-  const registerForPushNotificationsAsync = async () => {
-    const { status } = await Notifications.requestPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission required', 'Enable notifications in system settings.');
-    }
-  };
-
-  const loadReminderSetting = async () => {
-    try {
-      const saved = await AsyncStorage.getItem('@remindersEnabled');
-      if (saved !== null) {
-        setRemindersEnabled(JSON.parse(saved));
-      }
-    } catch (error) {
-      console.log('Failed to load reminder setting');
-    }
-  };
-
-  const handleToggle = async (value) => {
-    setRemindersEnabled(value);
-    await AsyncStorage.setItem('@remindersEnabled', JSON.stringify(value));
-    if (value) {
-      scheduleWaterReminder();
-      scheduleSleepReminder();
-      scheduleExerciseReminder();
+  useEffect(() => {
+    AsyncStorage.setItem('@dailyReminders', JSON.stringify(remindersEnabled));
+    if (remindersEnabled) {
+      scheduleDailyReminder();
     } else {
-      cancelAllReminders();
+      Notifications.cancelAllScheduledNotificationsAsync();
     }
-  };
+  }, [remindersEnabled, reminderTime]);
 
-  const scheduleWaterReminder = async () => {
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: '💧 Time to hydrate!',
-        body: 'Don’t forget to log your water intake.',
-      },
-      trigger: { hour: 12, minute: 0, repeats: true },
-    });
-  };
+  const scheduleDailyReminder = async () => {
+    const permission = await Notifications.requestPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission Required', 'Please enable notifications.');
+      return;
+    }
 
-  const scheduleSleepReminder = async () => {
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: '🛌 Time to log your sleep',
-        body: 'Track your rest for a better night’s sleep.',
-      },
-      trigger: { hour: 22, minute: 0, repeats: true },
-    });
-  };
-
-  const scheduleExerciseReminder = async () => {
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: '🏃 Log your exercise!',
-        body: 'How much did you move today? Log your activity.',
-      },
-      trigger: { hour: 18, minute: 0, repeats: true },
-    });
-  };
-
-  const cancelAllReminders = async () => {
     await Notifications.cancelAllScheduledNotificationsAsync();
+
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: 'HealthLog+ Reminder',
+        body: "Don't forget to log your health habits today!",
+      },
+      trigger: {
+        hour: reminderTime.getHours(),
+        minute: reminderTime.getMinutes(),
+        repeats: true,
+      },
+    });
+  };
+
+  const onTimeChange = (event, selectedDate) => {
+    setShowPicker(false);
+    if (selectedDate) {
+      setReminderTime(selectedDate);
+      AsyncStorage.setItem('@reminderTime', selectedDate.toISOString());
+    }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Settings</Text>
-      <View style={styles.row}>
-        <Text style={styles.label}>Daily Reminders</Text>
-        <Switch value={remindersEnabled} onValueChange={handleToggle} />
+      <Text style={styles.header}>Settings</Text>
+
+      <View style={styles.settingRow}>
+        <Text style={styles.settingText}>Daily Reminders</Text>
+        <Switch
+          value={remindersEnabled}
+          onValueChange={setRemindersEnabled}
+        />
       </View>
+
+      <Pressable onPress={() => setShowPicker(true)} style={styles.timeButton}>
+        <Text style={styles.timeButtonText}>
+          Reminder Time: {reminderTime.toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          })}
+        </Text>
+      </Pressable>
+
+      {showPicker && (
+        <DateTimePicker
+          value={reminderTime}
+          mode="time"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={onTimeChange}
+        />
+      )}
     </View>
   );
 }
@@ -89,26 +106,37 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    paddingTop: 100,
+    paddingHorizontal: 20,
     backgroundColor: '#fff',
-    justifyContent: 'center',
   },
-  title: {
-    fontSize: 24,
+  header: {
+    fontSize: 26,
     fontWeight: 'bold',
-    marginBottom: 20,
+    marginBottom: 40,
     textAlign: 'center',
   },
-  row: {
+  settingRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 10,
+    marginBottom: 30,
   },
-  label: {
+  settingText: {
     fontSize: 18,
   },
+  timeButton: {
+    backgroundColor: '#e0e0e0',
+    padding: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  timeButtonText: {
+    fontSize: 16,
+    color: '#333',
+  },
 });
+
 
 
 
