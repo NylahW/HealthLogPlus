@@ -7,12 +7,14 @@ import {
   Alert,
   Pressable,
   Platform,
+  Button,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-export default function SettingsScreen() {
+export default function SettingsScreen({ navigation }) {
+
   const [remindersEnabled, setRemindersEnabled] = useState(false);
   const [reminderTime, setReminderTime] = useState(new Date());
   const [showPicker, setShowPicker] = useState(false);
@@ -98,7 +100,13 @@ export default function SettingsScreen() {
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
           onChange={onTimeChange}
         />
-      )}
+      )}   
+
+<View style={{ marginTop: 30 }}>
+  <Button title="Go to Profile" onPress={() => navigation.navigate('Profile')} />
+</View>
+
+
     </View>
   );
 }

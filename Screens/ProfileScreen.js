@@ -4,72 +4,144 @@ import {
   Text,
   TextInput,
   Button,
-  StyleSheet,
+  Image,
   Alert,
-  Image
+  StyleSheet,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function ProfileScreen() {
+  const [avatar, setAvatar] = useState(null);
   const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
 
+  // Load saved profile info
   useEffect(() => {
-    const loadName = async () => {
+    const loadProfile = async () => {
       try {
-        const storedName = await AsyncStorage.getItem('@userName');
-        if (storedName) setName(storedName);
+        const savedAvatar = await AsyncStorage.getItem('@profileAvatar');
+        const savedName = await AsyncStorage.getItem('@profileName');
+        const savedEmail = await AsyncStorage.getItem('@profileEmail');
+
+        if (savedAvatar) setAvatar(savedAvatar);
+        if (savedName) setName(savedName);
+        if (savedEmail) setEmail(savedEmail);
       } catch (e) {
-        Alert.alert('Error', 'Failed to load profile name.');
+        console.log('Failed to load profile data', e);
       }
     };
-    loadName();
+    loadProfile();
   }, []);
 
-  const saveName = async () => {
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Required', 'Media access is required to select an avatar.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 1,
+      allowsEditing: true,
+      aspect: [1, 1],
+    });
+
+    if (!result.canceled) {
+      const uri = result.assets[0].uri;
+      setAvatar(uri);
+      await AsyncStorage.setItem('@profileAvatar', uri);
+    }
+  };
+
+  const handleSave = async () => {
     try {
-      await AsyncStorage.setItem('@userName', name);
-      Alert.alert('Saved', 'Your name has been saved!');
+      await AsyncStorage.setItem('@profileName', name);
+      await AsyncStorage.setItem('@profileEmail', email);
+      Alert.alert('Saved', 'Your profile info was saved successfully!');
     } catch (e) {
-      Alert.alert('Error', 'Failed to save name.');
+      Alert.alert('Error', 'Failed to save profile data.');
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Profile</Text>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1 }}
+    >
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.title}>Your Profile</Text>
 
-      {/* Avatar Placeholder */}
-      <Image
-        source={require('../assets/avatar.png')} // Replace or customize this
-        style={styles.avatar}
-      />
+        <TouchableOpacity onPress={pickImage}>
+          <Image
+            source={
+              avatar
+                ? { uri: avatar }
+                : require('../assets/default-avatar.png') // Make sure this file exists
+            }
+            style={styles.avatar}
+          />
+          <Text style={styles.changeText}>Tap to change avatar</Text>
+        </TouchableOpacity>
 
-      <Text style={styles.label}>Name</Text>
-      <TextInput
-        value={name}
-        onChangeText={setName}
-        style={styles.input}
-        placeholder="Enter your name"
-      />
-      <Button title="Save" onPress={saveName} />
-    </View>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter your name"
+          value={name}
+          onChangeText={setName}
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Enter your email"
+          value={email}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          onChangeText={setEmail}
+        />
+
+        <Button title="Save Profile" onPress={handleSave} color="#42a5f5" />
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20, backgroundColor: '#f4faff',
+    padding: 20,
+    alignItems: 'center',
+    backgroundColor: '#f4faff',
   },
   title: {
-    fontSize: 26, fontWeight: 'bold', marginBottom: 20
-  },
-  label: {
-    fontSize: 18, marginTop: 20
-  },
-  input: {
-    width: '80%', padding: 12, borderWidth: 1, borderColor: '#ccc', borderRadius: 10, marginBottom: 20, backgroundColor: '#fff'
+    fontSize: 26,
+    fontWeight: 'bold',
+    marginBottom: 30,
   },
   avatar: {
-    width: 100, height: 100, borderRadius: 50, marginBottom: 20
-  }
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: '#ddd',
+    marginBottom: 10,
+  },
+  changeText: {
+    fontSize: 14,
+    color: '#42a5f5',
+    marginBottom: 20,
+  },
+  input: {
+    width: '90%',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 20,
+    backgroundColor: '#fff',
+  },
 });
+
