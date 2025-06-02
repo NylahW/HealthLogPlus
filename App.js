@@ -8,6 +8,8 @@ import SleepScreen from './Screens/SleepScreen';
 import ExerciseScreen from './Screens/ExerciseScreen';
 import SettingsScreen from './Screens/SettingsScreen';
 import ProfileScreen from './Screens/ProfileScreen';
+import OnboardingScreen from './Screens/OnboardingScreen';
+
 
 
 const Stack = createNativeStackNavigator();
@@ -15,7 +17,8 @@ const Stack = createNativeStackNavigator();
 export default function App() {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Home">
+      <Stack.Navigator initialRouteName="Onboarding">
+          <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{ headerShown: false }} />
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Log" component={LogScreen} />
         <Stack.Screen name="Sleep" component={SleepScreen} />
